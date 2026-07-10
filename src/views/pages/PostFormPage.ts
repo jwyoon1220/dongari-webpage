@@ -5,6 +5,10 @@ import { FormErrors } from '../components/FormErrors';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
 import { LIMITS } from '../../config/constants';
 
+const INPUT_CLASS =
+  'mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none';
+const LABEL_CLASS = 'block text-sm font-medium text-zinc-300';
+
 export interface PostFormValues {
   title: string;
   content: string;
@@ -30,7 +34,7 @@ export class PostFormPage {
     const heading = mode === 'create' ? '새 게시물 작성' : '게시물 수정';
 
     const adminNotice = (message: string) =>
-      html`<div class="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">${message}</div>`;
+      html`<div class="rounded-md border border-indigo-900 bg-indigo-950/40 px-3 py-2 text-xs text-indigo-300">${message}</div>`;
 
     let nicknameField: SafeHtml;
     let passwordFields: SafeHtml;
@@ -46,7 +50,7 @@ export class PostFormPage {
       nicknameField =
         mode === 'create'
           ? html`<div>
-              <label for="nickname" class="block text-sm font-medium text-slate-700">닉네임</label>
+              <label for="nickname" class="${LABEL_CLASS}">닉네임</label>
               <input
                 id="nickname"
                 name="nickname"
@@ -54,7 +58,7 @@ export class PostFormPage {
                 required
                 maxlength="${String(LIMITS.NICKNAME_MAX)}"
                 value="${values.nickname}"
-                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                class="${INPUT_CLASS}"
               />
             </div>`
           : safe('');
@@ -63,7 +67,7 @@ export class PostFormPage {
         mode === 'create'
           ? html`<div class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label for="password" class="block text-sm font-medium text-slate-700">비밀번호</label>
+                <label for="password" class="${LABEL_CLASS}">비밀번호</label>
                 <input
                   id="password"
                   name="password"
@@ -71,12 +75,12 @@ export class PostFormPage {
                   required
                   minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
                   maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
-                  class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                  class="${INPUT_CLASS}"
                 />
-                <p class="mt-1 text-xs text-slate-400">수정/삭제 시 필요합니다. 잊지 마세요.</p>
+                <p class="mt-1 text-xs text-zinc-500">수정/삭제 시 필요합니다. 잊지 마세요.</p>
               </div>
               <div>
-                <label for="password_confirm" class="block text-sm font-medium text-slate-700">비밀번호 확인</label>
+                <label for="password_confirm" class="${LABEL_CLASS}">비밀번호 확인</label>
                 <input
                   id="password_confirm"
                   name="password_confirm"
@@ -84,12 +88,12 @@ export class PostFormPage {
                   required
                   minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
                   maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
-                  class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                  class="${INPUT_CLASS}"
                 />
               </div>
             </div>`
           : html`<div>
-              <label for="password" class="block text-sm font-medium text-slate-700">비밀번호 확인</label>
+              <label for="password" class="${LABEL_CLASS}">비밀번호 확인</label>
               <input
                 id="password"
                 name="password"
@@ -97,23 +101,23 @@ export class PostFormPage {
                 required
                 minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
                 maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
-                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                class="${INPUT_CLASS}"
               />
-              <p class="mt-1 text-xs text-slate-400">작성 시 설정한 비밀번호를 입력하세요.</p>
+              <p class="mt-1 text-xs text-zinc-500">작성 시 설정한 비밀번호를 입력하세요.</p>
             </div>`;
     }
 
     const body = html`<div class="max-w-xl mx-auto space-y-6">
       <div>
-        <p class="text-sm text-slate-400">${board.name}</p>
-        <h1 class="mt-1 text-2xl font-bold">${heading}</h1>
+        <p class="text-sm text-zinc-500">${board.name}</p>
+        <h1 class="mt-1 text-2xl font-bold text-zinc-50">${heading}</h1>
       </div>
       ${FormErrors.render(errors)}
       <form method="POST" action="${action}" class="space-y-4">
         <input type="hidden" name="${CSRF_FIELD_NAME}" value="${csrfToken}" />
         ${nicknameField}
         <div>
-          <label for="title" class="block text-sm font-medium text-slate-700">제목</label>
+          <label for="title" class="${LABEL_CLASS}">제목</label>
           <input
             id="title"
             name="title"
@@ -121,28 +125,28 @@ export class PostFormPage {
             required
             maxlength="${String(LIMITS.POST_TITLE_MAX)}"
             value="${values.title}"
-            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            class="${INPUT_CLASS}"
           />
         </div>
         <div>
-          <label for="content" class="block text-sm font-medium text-slate-700">내용</label>
+          <label for="content" class="${LABEL_CLASS}">내용</label>
           <textarea
             id="content"
             name="content"
             required
             maxlength="${String(LIMITS.POST_CONTENT_MAX)}"
             rows="10"
-            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            class="${INPUT_CLASS}"
           >
 ${values.content}</textarea
           >
         </div>
         ${passwordFields}
         <div class="flex items-center justify-end gap-2 pt-2">
-          <a href="/board/${board.slug}" class="rounded-md px-4 py-2 text-sm text-slate-500 hover:bg-slate-100"
+          <a href="/board/${board.slug}" class="rounded-md px-4 py-2 text-sm text-zinc-400 hover:bg-zinc-800"
             >취소</a
           >
-          <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+          <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
             저장
           </button>
         </div>

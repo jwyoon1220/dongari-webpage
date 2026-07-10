@@ -10,12 +10,14 @@ import { ErrorPage } from './views/pages/ErrorPage';
 import { buildLayoutOptions } from './views/layoutOptions';
 import { PublicController } from './controllers/PublicController';
 import { PostController } from './controllers/PostController';
+import { CommentController } from './controllers/CommentController';
 import { AdminController } from './controllers/AdminController';
 
 function buildRouter(app: AppContainer): Router {
   const router = new Router();
   const publicController = new PublicController(app);
   const postController = new PostController(app);
+  const commentController = new CommentController(app);
   const adminController = new AdminController(app);
 
   router.get('/', publicController.home);
@@ -28,6 +30,10 @@ function buildRouter(app: AppContainer): Router {
   router.post('/board/:slug/post/:id/edit', postController.update);
   router.get('/board/:slug/post/:id/delete', postController.deleteForm);
   router.post('/board/:slug/post/:id/delete', postController.destroy);
+
+  router.post('/board/:slug/post/:id/comments', commentController.create);
+  router.get('/board/:slug/post/:id/comments/:commentId/delete', commentController.deleteForm);
+  router.post('/board/:slug/post/:id/comments/:commentId/delete', commentController.destroy);
 
   router.get('/admin', adminController.loginForm);
   router.post('/admin/login', adminController.login);

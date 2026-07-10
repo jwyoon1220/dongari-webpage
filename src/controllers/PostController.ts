@@ -110,7 +110,16 @@ export class PostController extends BaseController {
       post.updatedAt,
       post.isAdminPost,
     );
-    return Respond.html(PostPage.render(buildLayoutOptions(ctx, post.title), board, displayPost));
+    const comments = await this.app.comments.findByPostId(post.id);
+    const isAdminUser = ctx.adminId !== null;
+    return Respond.html(
+      PostPage.render(buildLayoutOptions(ctx, post.title), board, displayPost, comments, {
+        errors: [],
+        values: { nickname: '', content: '' },
+        isAdminUser,
+        adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
+      }),
+    );
   };
 
   editForm = async (ctx: RequestContext): Promise<Response> => {
@@ -148,7 +157,7 @@ export class PostController extends BaseController {
     }
 
     if (errors.length === 0) {
-      const passwordError = await this.checkPostPassword(ctx, post.passwordHash, password);
+      const passwordError = await this.checkOwnerPassword(ctx, post.passwordHash, password);
       if (passwordError) errors.push(passwordError);
     }
 
@@ -193,7 +202,7 @@ export class PostController extends BaseController {
 
     const password = form.get('password') ?? '';
     const errors: string[] = [];
-    const passwordError = await this.checkPostPassword(ctx, post.passwordHash, password);
+    const passwordError = await this.checkOwnerPassword(ctx, post.passwordHash, password);
     if (passwordError) errors.push(passwordError);
 
     if (errors.length > 0) {
@@ -212,24 +221,4 @@ export class PostController extends BaseController {
     await this.app.posts.delete(post.id);
     return Respond.redirect(`/board/${board.slug}?flash=post_deleted`);
   };
-
-  /**
-   * 비밀번호 검증 + 무차별 대입 방어. 관리자 세션이면 어떤 게시물이든
-   * 비밀번호 확인 없이 통과시킨다(모더레이션 권한). 문제가 있으면 사용자에게
-   * 보여줄 오류 메시지를 반환한다.
-   */
-  private async checkPostPassword(ctx: RequestContext, passwordHash: string, password: string): Promise<string | null> {
-    if (ctx.adminId !== null) return null;
-
-    const identifier = `post_auth:${ctx.clientIp()}`;
-    if (await this.app.postAuthRateLimiter.isBlocked(identifier)) {
-      return '시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.';
-    }
-    const valid = password.length > 0 && (await PasswordHasher.verify(password, passwordHash));
-    if (!valid) {
-      await this.app.postAuthRateLimiter.recordFailure(identifier);
-      return '비밀번호가 일치하지 않습니다.';
-    }
-    return null;
-  }
 }
