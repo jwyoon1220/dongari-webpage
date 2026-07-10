@@ -2,6 +2,7 @@ import { html, SafeHtml } from '../../http/Html';
 import { Layout, LayoutOptions } from '../Layout';
 import { Board } from '../../models/Board';
 import { Post } from '../../models/Post';
+import { AdminBadge } from '../components/AdminBadge';
 import { formatDate } from '../format';
 
 export class PostPage {
@@ -12,7 +13,8 @@ export class PostPage {
           <a href="/board/${board.slug}" class="hover:text-slate-700">${board.name}</a>
         </p>
         <h1 class="mt-1 text-2xl font-bold break-words">${post.title}</h1>
-        <div class="mt-2 flex items-center gap-3 text-xs text-slate-400">
+        <div class="mt-2 flex items-center gap-2 text-xs text-slate-400">
+          ${AdminBadge.renderOrEmpty(post.isAdminPost)}
           <span>${post.authorNickname}</span>
           <span>${formatDate(post.createdAt)}</span>
           <span>조회 ${String(post.viewCount)}</span>

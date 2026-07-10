@@ -7,14 +7,22 @@ import { PostDeletePage } from '../views/pages/PostDeletePage';
 import { buildLayoutOptions } from '../views/layoutOptions';
 import { Sanitize } from '../security/Sanitize';
 import { PasswordHasher } from '../security/PasswordHasher';
+import { Encoding } from '../security/Encoding';
+import { adminNickname } from '../security/AdminIdentity';
 import { LIMITS } from '../config/constants';
 import { loadBoardBySlug, loadPostInBoard } from './loaders';
 import { Post } from '../models/Post';
 
-/** 게시물 CRUD. 작성자 인증은 회원가입 없이 게시물 비밀번호로만 수행한다. */
+/**
+ * 게시물 CRUD.
+ * - 일반 방문자: 회원가입 없이 닉네임 + 게시물 비밀번호로 작성/수정/삭제.
+ * - 관리자 세션: 비밀번호 없이 작성 가능하며, 닉네임은 admin_XXXXX로 고정되고
+ *   체크 배지가 표시된다. 관리자는 어떤 게시물이든 비밀번호 확인 없이 수정/삭제할 수 있다(모더레이션).
+ */
 export class PostController extends BaseController {
   newForm = async (ctx: RequestContext): Promise<Response> => {
     const board = await loadBoardBySlug(this.app, ctx.params.slug);
+    const isAdminUser = ctx.adminId !== null;
     const values: PostFormValues = { title: '', content: '', nickname: '' };
     return Respond.html(
       PostFormPage.render(buildLayoutOptions(ctx, `${board.name} - 글쓰기`), {
@@ -24,6 +32,8 @@ export class PostController extends BaseController {
         values,
         errors: [],
         csrfToken: ctx.csrfToken,
+        isAdminUser,
+        adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
       }),
     );
   };
@@ -33,26 +43,33 @@ export class PostController extends BaseController {
     const form = await ctx.form();
     this.verifyCsrfOrThrow(ctx, form);
 
-    const nickname = Sanitize.cleanText(form.get('nickname'));
+    const isAdminUser = ctx.adminId !== null;
     const title = Sanitize.cleanText(form.get('title'));
     const content = Sanitize.cleanText(form.get('content'));
-    const password = form.get('password') ?? '';
-    const passwordConfirm = form.get('password_confirm') ?? '';
 
     const errors: string[] = [];
-    if (!Sanitize.isNonEmptyWithin(nickname, LIMITS.NICKNAME_MIN, LIMITS.NICKNAME_MAX)) {
-      errors.push(`닉네임은 ${LIMITS.NICKNAME_MIN}~${LIMITS.NICKNAME_MAX}자로 입력하세요.`);
-    }
     if (!Sanitize.isNonEmptyWithin(title, LIMITS.POST_TITLE_MIN, LIMITS.POST_TITLE_MAX)) {
       errors.push(`제목은 ${LIMITS.POST_TITLE_MIN}~${LIMITS.POST_TITLE_MAX}자로 입력하세요.`);
     }
     if (!Sanitize.isNonEmptyWithin(content, LIMITS.POST_CONTENT_MIN, LIMITS.POST_CONTENT_MAX)) {
       errors.push(`내용은 ${LIMITS.POST_CONTENT_MIN}~${LIMITS.POST_CONTENT_MAX}자로 입력하세요.`);
     }
-    if (!Sanitize.isNonEmptyWithin(password, LIMITS.POST_PASSWORD_MIN, LIMITS.POST_PASSWORD_MAX)) {
-      errors.push(`비밀번호는 ${LIMITS.POST_PASSWORD_MIN}~${LIMITS.POST_PASSWORD_MAX}자로 입력하세요.`);
-    } else if (password !== passwordConfirm) {
-      errors.push('비밀번호 확인이 일치하지 않습니다.');
+
+    let nickname = '';
+    let password = '';
+    if (!isAdminUser) {
+      nickname = Sanitize.cleanText(form.get('nickname'));
+      password = form.get('password') ?? '';
+      const passwordConfirm = form.get('password_confirm') ?? '';
+
+      if (!Sanitize.isNonEmptyWithin(nickname, LIMITS.NICKNAME_MIN, LIMITS.NICKNAME_MAX)) {
+        errors.push(`닉네임은 ${LIMITS.NICKNAME_MIN}~${LIMITS.NICKNAME_MAX}자로 입력하세요.`);
+      }
+      if (!Sanitize.isNonEmptyWithin(password, LIMITS.POST_PASSWORD_MIN, LIMITS.POST_PASSWORD_MAX)) {
+        errors.push(`비밀번호는 ${LIMITS.POST_PASSWORD_MIN}~${LIMITS.POST_PASSWORD_MAX}자로 입력하세요.`);
+      } else if (password !== passwordConfirm) {
+        errors.push('비밀번호 확인이 일치하지 않습니다.');
+      }
     }
 
     if (errors.length > 0) {
@@ -64,12 +81,16 @@ export class PostController extends BaseController {
           values: { title, content, nickname },
           errors,
           csrfToken: ctx.csrfToken,
+          isAdminUser,
+          adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
         }),
       );
     }
 
-    const passwordHash = await PasswordHasher.hash(password);
-    const post = await this.app.posts.create(board.id, title, content, nickname, passwordHash);
+    const finalNickname = isAdminUser ? adminNickname(ctx.adminId as number) : nickname;
+    // 관리자 글은 게시물 비밀번호를 쓰지 않으므로(관리자 세션으로만 수정/삭제) 추측 불가능한 임의 값을 해싱해 둔다.
+    const passwordHash = isAdminUser ? await PasswordHasher.hash(Encoding.randomToken(32)) : await PasswordHasher.hash(password);
+    const post = await this.app.posts.create(board.id, title, content, finalNickname, passwordHash, isAdminUser);
     return Respond.redirect(`/board/${board.slug}/post/${post.id}?flash=post_created`);
   };
 
@@ -87,6 +108,7 @@ export class PostController extends BaseController {
       post.viewCount + 1,
       post.createdAt,
       post.updatedAt,
+      post.isAdminPost,
     );
     return Respond.html(PostPage.render(buildLayoutOptions(ctx, post.title), board, displayPost));
   };
@@ -102,6 +124,7 @@ export class PostController extends BaseController {
         values: { title: post.title, content: post.content, nickname: post.authorNickname },
         errors: [],
         csrfToken: ctx.csrfToken,
+        isAdminUser: ctx.adminId !== null,
       }),
     );
   };
@@ -138,6 +161,7 @@ export class PostController extends BaseController {
           values: { title, content, nickname: post.authorNickname },
           errors,
           csrfToken: ctx.csrfToken,
+          isAdminUser: ctx.adminId !== null,
         }),
       );
     }
@@ -150,7 +174,14 @@ export class PostController extends BaseController {
     const board = await loadBoardBySlug(this.app, ctx.params.slug);
     const post = await loadPostInBoard(this.app, board, ctx.params.id);
     return Respond.html(
-      PostDeletePage.render(buildLayoutOptions(ctx, `${post.title} - 삭제`), board, post, [], ctx.csrfToken),
+      PostDeletePage.render(
+        buildLayoutOptions(ctx, `${post.title} - 삭제`),
+        board,
+        post,
+        [],
+        ctx.csrfToken,
+        ctx.adminId !== null,
+      ),
     );
   };
 
@@ -167,7 +198,14 @@ export class PostController extends BaseController {
 
     if (errors.length > 0) {
       return Respond.badRequest(
-        PostDeletePage.render(buildLayoutOptions(ctx, `${post.title} - 삭제`), board, post, errors, ctx.csrfToken),
+        PostDeletePage.render(
+          buildLayoutOptions(ctx, `${post.title} - 삭제`),
+          board,
+          post,
+          errors,
+          ctx.csrfToken,
+          ctx.adminId !== null,
+        ),
       );
     }
 
@@ -175,8 +213,14 @@ export class PostController extends BaseController {
     return Respond.redirect(`/board/${board.slug}?flash=post_deleted`);
   };
 
-  /** 비밀번호 검증 + 무차별 대입 방어. 문제가 있으면 사용자에게 보여줄 오류 메시지를 반환한다. */
+  /**
+   * 비밀번호 검증 + 무차별 대입 방어. 관리자 세션이면 어떤 게시물이든
+   * 비밀번호 확인 없이 통과시킨다(모더레이션 권한). 문제가 있으면 사용자에게
+   * 보여줄 오류 메시지를 반환한다.
+   */
   private async checkPostPassword(ctx: RequestContext, passwordHash: string, password: string): Promise<string | null> {
+    if (ctx.adminId !== null) return null;
+
     const identifier = `post_auth:${ctx.clientIp()}`;
     if (await this.app.postAuthRateLimiter.isBlocked(identifier)) {
       return '시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.';
