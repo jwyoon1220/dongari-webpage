@@ -1,0 +1,8 @@
+name = "inside"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "inside-db"
+database_id = "7edf3b1a-8d37-4119-ad62-d6c55b189df8"

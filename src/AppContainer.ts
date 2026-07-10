@@ -1,0 +1,38 @@
+import { Env } from './config/Env';
+import { D1Client } from './db/D1Client';
+import { BoardRepository } from './repositories/BoardRepository';
+import { PostRepository } from './repositories/PostRepository';
+import { AdminRepository } from './repositories/AdminRepository';
+import { AdminSessionRepository } from './repositories/AdminSessionRepository';
+import { LoginAttemptRepository } from './repositories/LoginAttemptRepository';
+import { SessionService } from './security/SessionService';
+import { RateLimiter } from './security/RateLimiter';
+
+/**
+ * 요청마다 생성되는 의존성 컨테이너.
+ * 모든 Repository/Service는 이 컨테이너를 통해서만 조립되어
+ * 컨트롤러가 D1Database 바인딩을 직접 다루지 않도록 한다.
+ */
+export class AppContainer {
+  readonly db: D1Client;
+  readonly boards: BoardRepository;
+  readonly posts: PostRepository;
+  readonly admins: AdminRepository;
+  readonly adminSessions: AdminSessionRepository;
+  readonly loginAttempts: LoginAttemptRepository;
+  readonly sessionService: SessionService;
+  readonly loginRateLimiter: RateLimiter;
+  readonly postAuthRateLimiter: RateLimiter;
+
+  constructor(env: Env) {
+    this.db = new D1Client(env.DB);
+    this.boards = new BoardRepository(this.db);
+    this.posts = new PostRepository(this.db);
+    this.admins = new AdminRepository(this.db);
+    this.adminSessions = new AdminSessionRepository(this.db);
+    this.loginAttempts = new LoginAttemptRepository(this.db);
+    this.sessionService = new SessionService(this.adminSessions);
+    this.loginRateLimiter = new RateLimiter(this.loginAttempts, 5, 15);
+    this.postAuthRateLimiter = new RateLimiter(this.loginAttempts, 10, 15);
+  }
+}

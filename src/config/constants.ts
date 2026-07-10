@@ -1,0 +1,22 @@
+export const SITE_NAME = 'Inside';
+
+export const PAGE_SIZE = 20;
+
+export const LIMITS = {
+  BOARD_NAME_MIN: 1,
+  BOARD_NAME_MAX: 40,
+  BOARD_DESCRIPTION_MAX: 200,
+  POST_TITLE_MIN: 1,
+  POST_TITLE_MAX: 100,
+  POST_CONTENT_MIN: 1,
+  POST_CONTENT_MAX: 5000,
+  NICKNAME_MIN: 1,
+  NICKNAME_MAX: 20,
+  POST_PASSWORD_MIN: 4,
+  POST_PASSWORD_MAX: 64,
+  ADMIN_PASSWORD_MIN: 10,
+  ADMIN_PASSWORD_MAX: 128,
+} as const;
+
+/** 폼 바디 최대 허용 크기(바이트). DoS성 대용량 요청 차단용. */
+export const MAX_FORM_BODY_BYTES = 20_000;
