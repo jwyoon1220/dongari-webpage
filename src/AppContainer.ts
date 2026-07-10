@@ -2,6 +2,7 @@ import { Env } from './config/Env';
 import { D1Client } from './db/D1Client';
 import { BoardRepository } from './repositories/BoardRepository';
 import { PostRepository } from './repositories/PostRepository';
+import { CommentRepository } from './repositories/CommentRepository';
 import { AdminRepository } from './repositories/AdminRepository';
 import { AdminSessionRepository } from './repositories/AdminSessionRepository';
 import { LoginAttemptRepository } from './repositories/LoginAttemptRepository';
@@ -17,6 +18,7 @@ export class AppContainer {
   readonly db: D1Client;
   readonly boards: BoardRepository;
   readonly posts: PostRepository;
+  readonly comments: CommentRepository;
   readonly admins: AdminRepository;
   readonly adminSessions: AdminSessionRepository;
   readonly loginAttempts: LoginAttemptRepository;
@@ -28,11 +30,13 @@ export class AppContainer {
     this.db = new D1Client(env.DB);
     this.boards = new BoardRepository(this.db);
     this.posts = new PostRepository(this.db);
+    this.comments = new CommentRepository(this.db);
     this.admins = new AdminRepository(this.db);
     this.adminSessions = new AdminSessionRepository(this.db);
     this.loginAttempts = new LoginAttemptRepository(this.db);
     this.sessionService = new SessionService(this.adminSessions);
     this.loginRateLimiter = new RateLimiter(this.loginAttempts, 5, 15);
+    // 게시물/댓글 비밀번호 확인 시도에 공통으로 적용되는 무차별 대입 방어.
     this.postAuthRateLimiter = new RateLimiter(this.loginAttempts, 10, 15);
   }
 }

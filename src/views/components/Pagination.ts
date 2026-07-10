@@ -9,8 +9,8 @@ export class Pagination {
     for (let page = 1; page <= totalPages; page++) {
       const isCurrent = page === currentPage;
       const classes = isCurrent
-        ? 'bg-slate-900 text-white'
-        : 'text-slate-600 hover:bg-slate-100 border border-slate-200';
+        ? 'bg-indigo-600 text-white'
+        : 'text-zinc-400 hover:bg-zinc-800 border border-zinc-800';
       items.push(
         html`<a href="${basePath}?page=${String(page)}" class="px-3 py-1.5 rounded-md text-sm ${classes}"
           >${String(page)}</a
