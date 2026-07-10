@@ -3,6 +3,7 @@ import { Layout, LayoutOptions } from '../Layout';
 import { Board } from '../../models/Board';
 import { Post } from '../../models/Post';
 import { Pagination } from '../components/Pagination';
+import { AdminBadge } from '../components/AdminBadge';
 import { PAGE_SIZE } from '../../config/constants';
 import { formatDate } from '../format';
 
@@ -21,7 +22,8 @@ export class BoardPage {
             (post) => html`<li class="border-b border-slate-100 last:border-0">
               <a href="/board/${board.slug}/post/${String(post.id)}" class="flex items-center justify-between gap-4 py-3 px-1 hover:bg-slate-50 rounded-md">
                 <span class="truncate text-slate-900">${post.title}</span>
-                <span class="shrink-0 text-xs text-slate-400 flex items-center gap-3">
+                <span class="shrink-0 text-xs text-slate-400 flex items-center gap-2">
+                  ${AdminBadge.renderOrEmpty(post.isAdminPost)}
                   <span>${post.authorNickname}</span>
                   <span>${formatDate(post.createdAt)}</span>
                   <span>조회 ${String(post.viewCount)}</span>

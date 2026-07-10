@@ -8,9 +8,13 @@ export interface PostRow {
   view_count: number;
   created_at: string;
   updated_at: string;
+  is_admin_post: number;
 }
 
-/** 게시물 도메인 모델. 비회원 작성이므로 password_hash로 소유권을 증명한다. */
+/**
+ * 게시물 도메인 모델. 비회원 작성이므로 기본적으로 password_hash로 소유권을 증명하지만,
+ * isAdminPost인 경우 관리자 세션만으로 수정/삭제가 허용된다(PostController 참고).
+ */
 export class Post {
   constructor(
     public readonly id: number,
@@ -22,6 +26,7 @@ export class Post {
     public readonly viewCount: number,
     public readonly createdAt: string,
     public readonly updatedAt: string,
+    public readonly isAdminPost: boolean,
   ) {}
 
   static fromRow(row: PostRow): Post {
@@ -35,6 +40,7 @@ export class Post {
       row.view_count,
       row.created_at,
       row.updated_at,
+      row.is_admin_post === 1,
     );
   }
 }

@@ -1,4 +1,4 @@
-import { html, SafeHtml } from '../../http/Html';
+import { html, safe, SafeHtml } from '../../http/Html';
 import { Layout, LayoutOptions } from '../Layout';
 import { Board } from '../../models/Board';
 import { FormErrors } from '../components/FormErrors';
@@ -18,34 +18,78 @@ export interface PostFormPageOptions {
   values: PostFormValues;
   errors: string[];
   csrfToken: string;
+  /** 관리자 세션으로 작성/수정하는 경우 닉네임·비밀번호 입력을 생략하고 안내만 보여준다. */
+  isAdminUser: boolean;
+  /** mode === 'create' && isAdminUser 일 때 표시할 고정 닉네임 미리보기(admin_XXXXX) */
+  adminNicknamePreview?: string;
 }
 
 export class PostFormPage {
   static render(layoutOptions: LayoutOptions, options: PostFormPageOptions): SafeHtml {
-    const { mode, board, action, values, errors, csrfToken } = options;
+    const { mode, board, action, values, errors, csrfToken, isAdminUser, adminNicknamePreview } = options;
     const heading = mode === 'create' ? '새 게시물 작성' : '게시물 수정';
 
-    const nicknameField =
-      mode === 'create'
-        ? html`<div>
-            <label for="nickname" class="block text-sm font-medium text-slate-700">닉네임</label>
-            <input
-              id="nickname"
-              name="nickname"
-              type="text"
-              required
-              maxlength="${String(LIMITS.NICKNAME_MAX)}"
-              value="${values.nickname}"
-              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>`
-        : html``;
+    const adminNotice = (message: string) =>
+      html`<div class="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">${message}</div>`;
 
-    const passwordFields =
-      mode === 'create'
-        ? html`<div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="password" class="block text-sm font-medium text-slate-700">비밀번호</label>
+    let nicknameField: SafeHtml;
+    let passwordFields: SafeHtml;
+
+    if (isAdminUser) {
+      nicknameField =
+        mode === 'create'
+          ? adminNotice(`관리자 계정으로 작성됩니다 (닉네임: ${adminNicknamePreview ?? ''})`)
+          : safe('');
+      passwordFields =
+        mode === 'edit' ? adminNotice('관리자 권한으로 비밀번호 확인 없이 처리됩니다.') : safe('');
+    } else {
+      nicknameField =
+        mode === 'create'
+          ? html`<div>
+              <label for="nickname" class="block text-sm font-medium text-slate-700">닉네임</label>
+              <input
+                id="nickname"
+                name="nickname"
+                type="text"
+                required
+                maxlength="${String(LIMITS.NICKNAME_MAX)}"
+                value="${values.nickname}"
+                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>`
+          : safe('');
+
+      passwordFields =
+        mode === 'create'
+          ? html`<div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label for="password" class="block text-sm font-medium text-slate-700">비밀번호</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
+                  maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
+                  class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                />
+                <p class="mt-1 text-xs text-slate-400">수정/삭제 시 필요합니다. 잊지 마세요.</p>
+              </div>
+              <div>
+                <label for="password_confirm" class="block text-sm font-medium text-slate-700">비밀번호 확인</label>
+                <input
+                  id="password_confirm"
+                  name="password_confirm"
+                  type="password"
+                  required
+                  minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
+                  maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
+                  class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                />
+              </div>
+            </div>`
+          : html`<div>
+              <label for="password" class="block text-sm font-medium text-slate-700">비밀번호 확인</label>
               <input
                 id="password"
                 name="password"
@@ -55,34 +99,9 @@ export class PostFormPage {
                 maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
                 class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
               />
-              <p class="mt-1 text-xs text-slate-400">수정/삭제 시 필요합니다. 잊지 마세요.</p>
-            </div>
-            <div>
-              <label for="password_confirm" class="block text-sm font-medium text-slate-700">비밀번호 확인</label>
-              <input
-                id="password_confirm"
-                name="password_confirm"
-                type="password"
-                required
-                minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
-                maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
-                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-              />
-            </div>
-          </div>`
-        : html`<div>
-            <label for="password" class="block text-sm font-medium text-slate-700">비밀번호 확인</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minlength="${String(LIMITS.POST_PASSWORD_MIN)}"
-              maxlength="${String(LIMITS.POST_PASSWORD_MAX)}"
-              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-            <p class="mt-1 text-xs text-slate-400">작성 시 설정한 비밀번호를 입력하세요.</p>
-          </div>`;
+              <p class="mt-1 text-xs text-slate-400">작성 시 설정한 비밀번호를 입력하세요.</p>
+            </div>`;
+    }
 
     const body = html`<div class="max-w-xl mx-auto space-y-6">
       <div>
