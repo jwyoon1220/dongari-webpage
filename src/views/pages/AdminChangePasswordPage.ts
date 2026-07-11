@@ -3,15 +3,12 @@ import { Layout, LayoutOptions } from '../Layout';
 import { FormErrors } from '../components/FormErrors';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
 import { LIMITS } from '../../config/constants';
-
-const INPUT_CLASS =
-  'mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none';
-const LABEL_CLASS = 'block text-sm font-medium text-zinc-300';
+import { INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '../styles';
 
 export class AdminChangePasswordPage {
   static render(layoutOptions: LayoutOptions, errors: string[], csrfToken: string): SafeHtml {
     const body = html`<div class="max-w-sm mx-auto space-y-6">
-      <h1 class="text-2xl font-bold text-zinc-50">비밀번호 변경</h1>
+      <h1 class="text-2xl font-bold tracking-tight text-zinc-50">비밀번호 변경</h1>
       ${FormErrors.render(errors)}
       <form method="POST" action="/admin/password" class="space-y-4">
         <input type="hidden" name="${CSRF_FIELD_NAME}" value="${csrfToken}" />
@@ -53,12 +50,7 @@ export class AdminChangePasswordPage {
             class="${INPUT_CLASS}"
           />
         </div>
-        <button
-          type="submit"
-          class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-        >
-          변경
-        </button>
+        <button type="submit" class="w-full ${PRIMARY_BUTTON_CLASS}">변경</button>
       </form>
     </div>`;
 

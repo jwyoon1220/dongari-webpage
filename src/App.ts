@@ -83,6 +83,6 @@ export class App {
       response.headers.append('Set-Cookie', csrfSetCookie);
     }
 
-    return applySecurityHeaders(response);
+    return applySecurityHeaders(response, { noIndex: ctx.url.pathname.startsWith('/admin') });
   }
 }

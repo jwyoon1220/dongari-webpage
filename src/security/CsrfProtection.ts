@@ -27,8 +27,18 @@ export class CsrfProtection {
   static verify(request: Request, cookies: Map<string, string>, submittedToken: string | null): boolean {
     const cookieToken = cookies.get(CSRF_COOKIE_NAME);
     if (!cookieToken || !submittedToken) return false;
-    if (cookieToken !== submittedToken) return false;
+    if (!CsrfProtection.timingSafeEqual(cookieToken, submittedToken)) return false;
     return CsrfProtection.isTrustedOrigin(request);
+  }
+
+  /** 문자열 길이/내용 기반 타이밍 사이드채널을 막기 위한 상수 시간 비교. */
+  private static timingSafeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) {
+      diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return diff === 0;
   }
 
   private static isTrustedOrigin(request: Request): boolean {
