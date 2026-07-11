@@ -1,6 +1,7 @@
 import { html, safe, SafeHtml } from '../../http/Html';
 import { Layout, LayoutOptions } from '../Layout';
 import { Board } from '../../models/Board';
+import { PostContentFormat } from '../../models/Post';
 import { FormErrors } from '../components/FormErrors';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
 import { LIMITS } from '../../config/constants';
@@ -10,6 +11,7 @@ export interface PostFormValues {
   title: string;
   content: string;
   nickname: string;
+  contentFormat: PostContentFormat;
 }
 
 export interface PostFormPageOptions {
@@ -138,6 +140,7 @@ export class PostFormPage {
 ${values.content}</textarea
           >
         </div>
+        ${PostFormPage.renderFormatSelector(values.contentFormat)}
         ${passwordFields}
         ${mode === 'create' ? PostFormPage.renderLicenseCheckbox() : safe('')}
         <div class="flex items-center justify-end gap-2 pt-2">
@@ -148,6 +151,33 @@ ${values.content}</textarea
     </div>`;
 
     return Layout.render(layoutOptions, body);
+  }
+
+  private static renderFormatSelector(selected: PostContentFormat): SafeHtml {
+    const option = (value: PostContentFormat, label: string) => html`<label
+      class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition ${
+        selected === value
+          ? 'border-indigo-700 bg-indigo-950/40 text-indigo-300'
+          : 'border-zinc-700 text-zinc-400 hover:border-zinc-600'
+      }"
+    >
+      <input
+        type="radio"
+        name="content_format"
+        value="${value}"
+        class="h-3 w-3 border-zinc-600 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/40"
+        ${value === selected ? safe(' checked') : safe('')}
+      />
+      ${label}
+    </label>`;
+
+    return html`<div>
+      <span class="${LABEL_CLASS}">작성 형식</span>
+      <div class="mt-1 flex flex-wrap gap-2">
+        ${option('text', '텍스트')} ${option('markdown', '마크다운')} ${option('html', 'HTML')}
+      </div>
+      <p class="mt-1 text-xs text-zinc-500">HTML/마크다운은 안전한 서식 태그만 허용되며 위험한 요소는 자동으로 제거됩니다.</p>
+    </div>`;
   }
 
   private static renderLicenseCheckbox(): SafeHtml {

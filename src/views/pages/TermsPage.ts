@@ -3,25 +3,13 @@ import { Layout, LayoutOptions } from '../Layout';
 import { TERMS_MARKDOWN } from '../../content/termsContent';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 
-const MODE_TAB_CLASS = 'rounded-md border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-200';
-const MODE_TAB_ACTIVE_CLASS = 'rounded-md border border-indigo-700 bg-indigo-950/40 px-3 py-1.5 text-xs text-indigo-300';
-
 /** 이용약관 페이지. GFDL 게시물 라이선스 안내, 이용자간 면책, 연락처를 담은 마크다운을 HTML로 렌더링한다. */
 export class TermsPage {
   static render(layoutOptions: LayoutOptions): SafeHtml {
-    const modeTabs = html`<nav class="flex gap-2">
-      <span class="${MODE_TAB_ACTIVE_CLASS}">HTML</span>
-      <a href="/terms.md" class="${MODE_TAB_CLASS}">Markdown</a>
-      <a href="/terms.txt" class="${MODE_TAB_CLASS}">텍스트</a>
-    </nav>`;
-
     const body = html`<article class="mx-auto max-w-2xl space-y-8">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-zinc-50">이용약관</h1>
-          <p class="mt-1 text-sm text-zinc-500">Inside 커뮤니티 서비스 이용약관</p>
-        </div>
-        ${modeTabs}
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-zinc-50">이용약관</h1>
+        <p class="mt-1 text-sm text-zinc-500">Inside 커뮤니티 서비스 이용약관</p>
       </div>
 
       <div class="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 sm:p-8">
