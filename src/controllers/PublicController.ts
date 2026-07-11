@@ -3,16 +3,21 @@ import { RequestContext } from '../http/RequestContext';
 import { Respond } from '../http/Respond';
 import { HomePage } from '../views/pages/HomePage';
 import { BoardPage } from '../views/pages/BoardPage';
+import { TermsPage } from '../views/pages/TermsPage';
 import { buildLayoutOptions } from '../views/layoutOptions';
 import { Sanitize } from '../security/Sanitize';
 import { PAGE_SIZE } from '../config/constants';
 import { loadBoardBySlug } from './loaders';
 
-/** 비회원도 접근 가능한 공개 조회 화면(홈, 게시판 목록) */
+/** 비회원도 접근 가능한 공개 조회 화면(홈, 게시판 목록, 이용약관) */
 export class PublicController extends BaseController {
   home = async (ctx: RequestContext): Promise<Response> => {
     const boards = await this.app.boards.findAllWithPostCounts();
     return Respond.html(HomePage.render(buildLayoutOptions(ctx, '홈'), boards));
+  };
+
+  terms = async (ctx: RequestContext): Promise<Response> => {
+    return Respond.html(TermsPage.render(buildLayoutOptions(ctx, '이용약관')));
   };
 
   boardShow = async (ctx: RequestContext): Promise<Response> => {
