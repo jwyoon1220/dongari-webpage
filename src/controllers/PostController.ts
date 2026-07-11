@@ -72,6 +72,11 @@ export class PostController extends BaseController {
       }
     }
 
+    if (errors.length === 0) {
+      const rateLimitError = await this.checkCreationRateLimit(ctx, 'post_create');
+      if (rateLimitError) errors.push(rateLimitError);
+    }
+
     if (errors.length > 0) {
       return Respond.badRequest(
         PostFormPage.render(buildLayoutOptions(ctx, `${board.name} - 글쓰기`), {

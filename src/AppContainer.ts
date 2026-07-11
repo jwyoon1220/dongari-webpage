@@ -25,6 +25,7 @@ export class AppContainer {
   readonly sessionService: SessionService;
   readonly loginRateLimiter: RateLimiter;
   readonly postAuthRateLimiter: RateLimiter;
+  readonly creationRateLimiter: RateLimiter;
 
   constructor(env: Env) {
     this.db = new D1Client(env.DB);
@@ -38,5 +39,7 @@ export class AppContainer {
     this.loginRateLimiter = new RateLimiter(this.loginAttempts, 5, 15);
     // 게시물/댓글 비밀번호 확인 시도에 공통으로 적용되는 무차별 대입 방어.
     this.postAuthRateLimiter = new RateLimiter(this.loginAttempts, 10, 15);
+    // 게시물/댓글 도배(스팸) 방지: IP당 5분에 8건까지.
+    this.creationRateLimiter = new RateLimiter(this.loginAttempts, 8, 5);
   }
 }

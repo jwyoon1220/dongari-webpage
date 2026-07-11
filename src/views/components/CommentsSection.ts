@@ -7,6 +7,7 @@ import { FormErrors } from './FormErrors';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
 import { LIMITS } from '../../config/constants';
 import { formatDate } from '../format';
+import { INPUT_CLASS, PRIMARY_BUTTON_CLASS } from '../styles';
 
 export interface CommentFormState {
   errors: string[];
@@ -14,9 +15,6 @@ export interface CommentFormState {
   isAdminUser: boolean;
   adminNicknamePreview?: string;
 }
-
-const INPUT_CLASS =
-  'mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none';
 
 /** 게시물 상세 페이지에 삽입되는 댓글 목록 + 작성 폼. 댓글은 수정할 수 없고 생성/삭제만 가능하다. */
 export class CommentsSection {
@@ -31,7 +29,7 @@ export class CommentsSection {
       comments.length === 0
         ? html`<p class="py-6 text-center text-sm text-zinc-500">아직 댓글이 없습니다.</p>`
         : comments.map(
-            (comment) => html`<li class="border-b border-zinc-800 py-3 last:border-0">
+            (comment) => html`<li class="border-b border-zinc-800/70 py-3 last:border-0">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5 text-xs text-zinc-500">
                   ${AdminBadge.renderOrEmpty(comment.isAdminComment)}
@@ -40,11 +38,11 @@ export class CommentsSection {
                 </div>
                 <a
                   href="/board/${board.slug}/post/${String(post.id)}/comments/${String(comment.id)}/delete"
-                  class="text-xs text-zinc-600 hover:text-rose-400"
+                  class="text-xs text-zinc-600 transition hover:text-rose-400"
                   >삭제</a
                 >
               </div>
-              <p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">${comment.content}</p>
+              <p class="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-200">${comment.content}</p>
             </li>`,
           );
 
@@ -75,7 +73,7 @@ export class CommentsSection {
 
     return html`<section id="comments" class="space-y-4">
       <h2 class="text-sm font-semibold text-zinc-300">댓글 ${String(comments.length)}</h2>
-      <ul class="rounded-xl border border-zinc-800 bg-zinc-900 px-4">${list}</ul>
+      <ul class="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-4">${list}</ul>
       ${FormErrors.render(form.errors)}
       <form method="POST" action="/board/${board.slug}/post/${String(post.id)}/comments" class="space-y-3">
         <input type="hidden" name="${CSRF_FIELD_NAME}" value="${csrfToken}" />
@@ -91,9 +89,7 @@ export class CommentsSection {
 ${form.values.content}</textarea
         >
         <div class="flex justify-end">
-          <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-            댓글 등록
-          </button>
+          <button type="submit" class="${PRIMARY_BUTTON_CLASS}">댓글 등록</button>
         </div>
       </form>
     </section>`;

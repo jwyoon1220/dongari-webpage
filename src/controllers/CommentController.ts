@@ -43,6 +43,11 @@ export class CommentController extends BaseController {
       }
     }
 
+    if (errors.length === 0) {
+      const rateLimitError = await this.checkCreationRateLimit(ctx, 'comment_create');
+      if (rateLimitError) errors.push(rateLimitError);
+    }
+
     if (errors.length > 0) {
       const comments = await this.app.comments.findByPostId(post.id);
       return Respond.badRequest(

@@ -2,16 +2,17 @@ import { html, SafeHtml } from '../../http/Html';
 import { Layout, LayoutOptions } from '../Layout';
 import { FormErrors } from '../components/FormErrors';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
+import { INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '../styles';
 
 export class AdminLoginPage {
   static render(layoutOptions: LayoutOptions, errors: string[], csrfToken: string, username: string): SafeHtml {
-    const body = html`<div class="max-w-sm mx-auto space-y-6">
-      <h1 class="text-2xl font-bold text-center text-zinc-50">관리자 로그인</h1>
+    const body = html`<div class="max-w-sm mx-auto mt-6 space-y-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-8">
+      <h1 class="text-xl font-bold tracking-tight text-center text-zinc-50">관리자 로그인</h1>
       ${FormErrors.render(errors)}
       <form method="POST" action="/admin/login" class="space-y-4">
         <input type="hidden" name="${CSRF_FIELD_NAME}" value="${csrfToken}" />
         <div>
-          <label for="username" class="block text-sm font-medium text-zinc-300">아이디</label>
+          <label for="username" class="${LABEL_CLASS}">아이디</label>
           <input
             id="username"
             name="username"
@@ -19,26 +20,21 @@ export class AdminLoginPage {
             required
             autocomplete="username"
             value="${username}"
-            class="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none"
+            class="${INPUT_CLASS}"
           />
         </div>
         <div>
-          <label for="password" class="block text-sm font-medium text-zinc-300">비밀번호</label>
+          <label for="password" class="${LABEL_CLASS}">비밀번호</label>
           <input
             id="password"
             name="password"
             type="password"
             required
             autocomplete="current-password"
-            class="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none"
+            class="${INPUT_CLASS}"
           />
         </div>
-        <button
-          type="submit"
-          class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-        >
-          로그인
-        </button>
+        <button type="submit" class="w-full ${PRIMARY_BUTTON_CLASS}">로그인</button>
       </form>
     </div>`;
 

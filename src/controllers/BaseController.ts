@@ -44,4 +44,19 @@ export abstract class BaseController {
     }
     return null;
   }
+
+  /**
+   * 게시물/댓글 도배(스팸) 방지. 관리자 세션은 제한하지 않는다.
+   * 통과 시 이번 시도를 즉시 기록하고 null을, 초과 시 오류 메시지를 반환한다.
+   */
+  protected async checkCreationRateLimit(ctx: RequestContext, kind: string): Promise<string | null> {
+    if (ctx.adminId !== null) return null;
+
+    const identifier = `${kind}:${ctx.clientIp()}`;
+    if (await this.app.creationRateLimiter.isBlocked(identifier)) {
+      return '너무 빠르게 작성하고 있습니다. 잠시 후 다시 시도해주세요.';
+    }
+    await this.app.creationRateLimiter.recordEvent(identifier);
+    return null;
+  }
 }

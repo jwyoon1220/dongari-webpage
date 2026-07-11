@@ -18,9 +18,9 @@ export class PostPage {
     const body = html`<article class="space-y-6">
       <div>
         <p class="text-sm text-zinc-500">
-          <a href="/board/${board.slug}" class="hover:text-zinc-300">${board.name}</a>
+          <a href="/board/${board.slug}" class="transition hover:text-zinc-300">${board.name}</a>
         </p>
-        <h1 class="mt-1 text-2xl font-bold break-words text-zinc-50">${post.title}</h1>
+        <h1 class="mt-1.5 text-2xl font-bold tracking-tight break-words text-zinc-50">${post.title}</h1>
         <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
           ${AdminBadge.renderOrEmpty(post.isAdminPost)}
           <span>${post.authorNickname}</span>
@@ -28,20 +28,20 @@ export class PostPage {
           <span>조회 ${String(post.viewCount)}</span>
         </div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+      <div class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
         <p class="whitespace-pre-wrap break-words leading-relaxed text-zinc-200">${post.content}</p>
       </div>
       <div class="flex items-center justify-between">
-        <a href="/board/${board.slug}" class="text-sm text-zinc-500 hover:text-zinc-200">← 목록으로</a>
+        <a href="/board/${board.slug}" class="text-sm text-zinc-500 transition hover:text-zinc-200">← 목록으로</a>
         <div class="flex gap-2">
           <a
             href="/board/${board.slug}/post/${String(post.id)}/edit"
-            class="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
+            class="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 transition hover:bg-zinc-800"
             >수정</a
           >
           <a
             href="/board/${board.slug}/post/${String(post.id)}/delete"
-            class="rounded-md border border-rose-900 px-3 py-1.5 text-sm text-rose-400 hover:bg-rose-950/40"
+            class="rounded-md border border-rose-900 px-3 py-1.5 text-sm text-rose-400 transition hover:bg-rose-950/40"
             >삭제</a
           >
         </div>

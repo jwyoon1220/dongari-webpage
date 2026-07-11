@@ -22,6 +22,11 @@ export class RateLimiter {
     await this.attempts.record(identifier);
   }
 
+  /** recordFailure의 별칭. 실패가 아니라 "이벤트 발생 자체"를 세는 용도(예: 게시물 생성 빈도 제한)로 쓸 때 의미가 더 명확하다. */
+  async recordEvent(identifier: string): Promise<void> {
+    await this.attempts.record(identifier);
+  }
+
   async clear(identifier: string): Promise<void> {
     await this.attempts.clear(identifier);
   }

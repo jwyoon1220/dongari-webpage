@@ -4,10 +4,7 @@ import { Board } from '../../models/Board';
 import { FormErrors } from '../components/FormErrors';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
 import { LIMITS } from '../../config/constants';
-
-const INPUT_CLASS =
-  'mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none';
-const LABEL_CLASS = 'block text-sm font-medium text-zinc-300';
+import { INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS, GHOST_BUTTON_CLASS } from '../styles';
 
 export interface PostFormValues {
   title: string;
@@ -110,7 +107,7 @@ export class PostFormPage {
     const body = html`<div class="max-w-xl mx-auto space-y-6">
       <div>
         <p class="text-sm text-zinc-500">${board.name}</p>
-        <h1 class="mt-1 text-2xl font-bold text-zinc-50">${heading}</h1>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight text-zinc-50">${heading}</h1>
       </div>
       ${FormErrors.render(errors)}
       <form method="POST" action="${action}" class="space-y-4">
@@ -143,12 +140,8 @@ ${values.content}</textarea
         </div>
         ${passwordFields}
         <div class="flex items-center justify-end gap-2 pt-2">
-          <a href="/board/${board.slug}" class="rounded-md px-4 py-2 text-sm text-zinc-400 hover:bg-zinc-800"
-            >취소</a
-          >
-          <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-            저장
-          </button>
+          <a href="/board/${board.slug}" class="${GHOST_BUTTON_CLASS}">취소</a>
+          <button type="submit" class="${PRIMARY_BUTTON_CLASS}">저장</button>
         </div>
       </form>
     </div>`;
