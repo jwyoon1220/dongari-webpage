@@ -4,6 +4,7 @@ import { Respond } from '../http/Respond';
 import { PostPage } from '../views/pages/PostPage';
 import { PostFormPage, PostFormValues } from '../views/pages/PostFormPage';
 import { PostDeletePage } from '../views/pages/PostDeletePage';
+import { PostContentRenderer } from '../views/content/PostContentRenderer';
 import { buildLayoutOptions } from '../views/layoutOptions';
 import { Sanitize } from '../security/Sanitize';
 import { PasswordHasher } from '../security/PasswordHasher';
@@ -11,19 +12,21 @@ import { Encoding } from '../security/Encoding';
 import { adminNickname } from '../security/AdminIdentity';
 import { LIMITS } from '../config/constants';
 import { loadBoardBySlug, loadPostInBoard } from './loaders';
-import { Post } from '../models/Post';
+import { Post, parsePostContentFormat } from '../models/Post';
 
 /**
  * 게시물 CRUD.
  * - 일반 방문자: 회원가입 없이 닉네임 + 게시물 비밀번호로 작성/수정/삭제.
  * - 관리자 세션: 비밀번호 없이 작성 가능하며, 닉네임은 admin_XXXXX로 고정되고
  *   체크 배지가 표시된다. 관리자는 어떤 게시물이든 비밀번호 확인 없이 수정/삭제할 수 있다(모더레이션).
+ * - 작성 형식은 텍스트/마크다운/HTML 중 선택 가능하며, 마크다운·HTML은 렌더링 시
+ *   화이트리스트 기반으로 정제된다(PostContentRenderer, HtmlSanitizer 참고).
  */
 export class PostController extends BaseController {
   newForm = async (ctx: RequestContext): Promise<Response> => {
     const board = await loadBoardBySlug(this.app, ctx.params.slug);
     const isAdminUser = ctx.adminId !== null;
-    const values: PostFormValues = { title: '', content: '', nickname: '' };
+    const values: PostFormValues = { title: '', content: '', nickname: '', contentFormat: 'text' };
     return Respond.html(
       PostFormPage.render(buildLayoutOptions(ctx, `${board.name} - 글쓰기`), {
         mode: 'create',
@@ -46,6 +49,7 @@ export class PostController extends BaseController {
     const isAdminUser = ctx.adminId !== null;
     const title = Sanitize.cleanText(form.get('title'));
     const content = Sanitize.cleanText(form.get('content'));
+    const contentFormat = parsePostContentFormat(form.get('content_format'));
 
     const errors: string[] = [];
     if (!Sanitize.isNonEmptyWithin(title, LIMITS.POST_TITLE_MIN, LIMITS.POST_TITLE_MAX)) {
@@ -87,7 +91,7 @@ export class PostController extends BaseController {
           mode: 'create',
           board,
           action: `/board/${board.slug}/write`,
-          values: { title, content, nickname },
+          values: { title, content, nickname, contentFormat },
           errors,
           csrfToken: ctx.csrfToken,
           isAdminUser,
@@ -99,7 +103,15 @@ export class PostController extends BaseController {
     const finalNickname = isAdminUser ? adminNickname(ctx.adminId as number) : nickname;
     // 관리자 글은 게시물 비밀번호를 쓰지 않으므로(관리자 세션으로만 수정/삭제) 추측 불가능한 임의 값을 해싱해 둔다.
     const passwordHash = isAdminUser ? await PasswordHasher.hash(Encoding.randomToken(32)) : await PasswordHasher.hash(password);
-    const post = await this.app.posts.create(board.id, title, content, finalNickname, passwordHash, isAdminUser);
+    const post = await this.app.posts.create(
+      board.id,
+      title,
+      content,
+      finalNickname,
+      passwordHash,
+      isAdminUser,
+      contentFormat,
+    );
     return Respond.redirect(`/board/${board.slug}/post/${post.id}?flash=post_created`);
   };
 
@@ -118,11 +130,13 @@ export class PostController extends BaseController {
       post.createdAt,
       post.updatedAt,
       post.isAdminPost,
+      post.contentFormat,
     );
+    const contentHtml = await PostContentRenderer.render(displayPost.content, displayPost.contentFormat);
     const comments = await this.app.comments.findByPostId(post.id);
     const isAdminUser = ctx.adminId !== null;
     return Respond.html(
-      PostPage.render(buildLayoutOptions(ctx, post.title), board, displayPost, comments, {
+      PostPage.render(buildLayoutOptions(ctx, post.title), board, displayPost, contentHtml, comments, {
         errors: [],
         values: { nickname: '', content: '' },
         isAdminUser,
@@ -139,7 +153,7 @@ export class PostController extends BaseController {
         mode: 'edit',
         board,
         action: `/board/${board.slug}/post/${post.id}/edit`,
-        values: { title: post.title, content: post.content, nickname: post.authorNickname },
+        values: { title: post.title, content: post.content, nickname: post.authorNickname, contentFormat: post.contentFormat },
         errors: [],
         csrfToken: ctx.csrfToken,
         isAdminUser: ctx.adminId !== null,
@@ -155,6 +169,7 @@ export class PostController extends BaseController {
 
     const title = Sanitize.cleanText(form.get('title'));
     const content = Sanitize.cleanText(form.get('content'));
+    const contentFormat = parsePostContentFormat(form.get('content_format'));
     const password = form.get('password') ?? '';
 
     const errors: string[] = [];
@@ -176,7 +191,7 @@ export class PostController extends BaseController {
           mode: 'edit',
           board,
           action: `/board/${board.slug}/post/${post.id}/edit`,
-          values: { title, content, nickname: post.authorNickname },
+          values: { title, content, nickname: post.authorNickname, contentFormat },
           errors,
           csrfToken: ctx.csrfToken,
           isAdminUser: ctx.adminId !== null,
@@ -184,7 +199,7 @@ export class PostController extends BaseController {
       );
     }
 
-    await this.app.posts.update(post.id, title, content);
+    await this.app.posts.update(post.id, title, content, contentFormat);
     return Respond.redirect(`/board/${board.slug}/post/${post.id}?flash=post_updated`);
   };
 

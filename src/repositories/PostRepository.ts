@@ -1,5 +1,5 @@
 import { D1Client } from '../db/D1Client';
-import { Post, PostRow } from '../models/Post';
+import { Post, PostContentFormat, PostRow } from '../models/Post';
 
 export interface PostPage {
   posts: Post[];
@@ -7,7 +7,7 @@ export interface PostPage {
 }
 
 const POST_COLUMNS =
-  'id, board_id, title, content, author_nickname, password_hash, view_count, created_at, updated_at, is_admin_post';
+  'id, board_id, title, content, author_nickname, password_hash, view_count, created_at, updated_at, is_admin_post, content_format';
 
 /** 게시물 데이터 접근 계층. 모든 쿼리는 파라미터 바인딩으로만 실행된다. */
 export class PostRepository {
@@ -36,21 +36,22 @@ export class PostRepository {
     authorNickname: string,
     passwordHash: string,
     isAdminPost: boolean,
+    contentFormat: PostContentFormat,
   ): Promise<Post> {
     const row = await this.db.first<PostRow>(
-      `INSERT INTO posts (board_id, title, content, author_nickname, password_hash, is_admin_post)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO posts (board_id, title, content, author_nickname, password_hash, is_admin_post, content_format)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        RETURNING ${POST_COLUMNS}`,
-      [boardId, title, content, authorNickname, passwordHash, isAdminPost ? 1 : 0],
+      [boardId, title, content, authorNickname, passwordHash, isAdminPost ? 1 : 0, contentFormat],
     );
     if (!row) throw new Error('게시물 생성에 실패했습니다.');
     return Post.fromRow(row);
   }
 
-  async update(id: number, title: string, content: string): Promise<void> {
+  async update(id: number, title: string, content: string, contentFormat: PostContentFormat): Promise<void> {
     await this.db.run(
-      "UPDATE posts SET title = ?, content = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
-      [title, content, id],
+      "UPDATE posts SET title = ?, content = ?, content_format = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+      [title, content, contentFormat, id],
     );
   }
 

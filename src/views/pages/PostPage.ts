@@ -12,6 +12,7 @@ export class PostPage {
     layoutOptions: LayoutOptions,
     board: Board,
     post: Post,
+    contentHtml: SafeHtml,
     comments: Comment[],
     commentForm: CommentFormState,
   ): SafeHtml {
@@ -29,7 +30,7 @@ export class PostPage {
         </div>
       </div>
       <div class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
-        <p class="whitespace-pre-wrap break-words leading-relaxed text-zinc-200">${post.content}</p>
+        ${contentHtml}
       </div>
       <div class="flex items-center justify-between">
         <a href="/board/${board.slug}" class="text-sm text-zinc-500 transition hover:text-zinc-200">← 목록으로</a>
