@@ -8,6 +8,12 @@ export class Respond {
     return new Response(content.value, { ...init, headers });
   }
 
+  static text(content: string, init: ResponseInit = {}): Response {
+    const headers = new Headers(init.headers);
+    headers.set('Content-Type', 'text/plain; charset=utf-8');
+    return new Response(content, { ...init, headers });
+  }
+
   static redirect(location: string, extraHeaders: string[][] = []): Response {
     const headers = new Headers(extraHeaders);
     headers.set('Location', location);

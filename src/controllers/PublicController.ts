@@ -8,6 +8,8 @@ import { buildLayoutOptions } from '../views/layoutOptions';
 import { Sanitize } from '../security/Sanitize';
 import { PAGE_SIZE } from '../config/constants';
 import { loadBoardBySlug } from './loaders';
+import { TERMS_MARKDOWN } from '../content/termsContent';
+import { MarkdownRenderer } from '../views/markdown/MarkdownRenderer';
 
 /** 비회원도 접근 가능한 공개 조회 화면(홈, 게시판 목록, 이용약관) */
 export class PublicController extends BaseController {
@@ -18,6 +20,16 @@ export class PublicController extends BaseController {
 
   terms = async (ctx: RequestContext): Promise<Response> => {
     return Respond.html(TermsPage.render(buildLayoutOptions(ctx, '이용약관')));
+  };
+
+  /** 이용약관 원문을 마크다운 그대로 반환한다(모드: 마크다운). */
+  termsMarkdown = async (): Promise<Response> => {
+    return Respond.text(TERMS_MARKDOWN);
+  };
+
+  /** 이용약관을 마크다운 문법을 제거한 순수 텍스트로 반환한다(모드: 텍스트). */
+  termsText = async (): Promise<Response> => {
+    return Respond.text(MarkdownRenderer.toPlainText(TERMS_MARKDOWN));
   };
 
   boardShow = async (ctx: RequestContext): Promise<Response> => {

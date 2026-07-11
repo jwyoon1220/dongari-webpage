@@ -22,6 +22,8 @@ function buildRouter(app: AppContainer): Router {
 
   router.get('/', publicController.home);
   router.get('/terms', publicController.terms);
+  router.get('/terms.md', publicController.termsMarkdown);
+  router.get('/terms.txt', publicController.termsText);
   router.get('/board/:slug', publicController.boardShow);
 
   router.get('/board/:slug/write', postController.newForm);
