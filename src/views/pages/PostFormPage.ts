@@ -139,6 +139,7 @@ ${values.content}</textarea
           >
         </div>
         ${passwordFields}
+        ${mode === 'create' ? PostFormPage.renderLicenseCheckbox() : safe('')}
         <div class="flex items-center justify-end gap-2 pt-2">
           <a href="/board/${board.slug}" class="${GHOST_BUTTON_CLASS}">취소</a>
           <button type="submit" class="${PRIMARY_BUTTON_CLASS}">저장</button>
@@ -147,5 +148,22 @@ ${values.content}</textarea
     </div>`;
 
     return Layout.render(layoutOptions, body);
+  }
+
+  private static renderLicenseCheckbox(): SafeHtml {
+    return html`<label class="flex items-start gap-2 text-xs text-zinc-400">
+      <input
+        type="checkbox"
+        name="license_agree"
+        required
+        class="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-zinc-600 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/40"
+      />
+      <span
+        >이 게시물은
+        <a href="https://www.gnu.org/licenses/fdl-1.3.html" class="text-indigo-400 underline underline-offset-2 hover:text-indigo-300" rel="noopener noreferrer" target="_blank"
+          >GNU 자유 문서 사용 허가서(GFDL) 1.3</a
+        >에 따라 이용이 허락되며, <a href="/terms" class="text-indigo-400 underline underline-offset-2 hover:text-indigo-300" target="_blank">이용약관</a>에 동의합니다.</span
+      >
+    </label>`;
   }
 }

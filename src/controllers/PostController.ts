@@ -72,6 +72,10 @@ export class PostController extends BaseController {
       }
     }
 
+    if (form.get('license_agree') !== 'on') {
+      errors.push('GFDL 라이선스 및 이용약관에 동의해야 게시물을 작성할 수 있습니다.');
+    }
+
     if (errors.length === 0) {
       const rateLimitError = await this.checkCreationRateLimit(ctx, 'post_create');
       if (rateLimitError) errors.push(rateLimitError);

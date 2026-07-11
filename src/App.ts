@@ -21,6 +21,7 @@ function buildRouter(app: AppContainer): Router {
   const adminController = new AdminController(app);
 
   router.get('/', publicController.home);
+  router.get('/terms', publicController.terms);
   router.get('/board/:slug', publicController.boardShow);
 
   router.get('/board/:slug/write', postController.newForm);
