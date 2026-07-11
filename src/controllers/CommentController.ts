@@ -1,8 +1,8 @@
 import { BaseController } from './BaseController';
 import { RequestContext } from '../http/RequestContext';
 import { Respond } from '../http/Respond';
+import { safe } from '../http/Html';
 import { PostPage } from '../views/pages/PostPage';
-import { PostContentRenderer } from '../views/content/PostContentRenderer';
 import { CommentDeletePage } from '../views/pages/CommentDeletePage';
 import { buildLayoutOptions } from '../views/layoutOptions';
 import { Sanitize } from '../security/Sanitize';
@@ -51,7 +51,7 @@ export class CommentController extends BaseController {
 
     if (errors.length > 0) {
       const comments = await this.app.comments.findByPostId(post.id);
-      const contentHtml = await PostContentRenderer.render(post.content, post.contentFormat);
+      const contentHtml = safe(post.renderedContent);
       return Respond.badRequest(
         PostPage.render(buildLayoutOptions(ctx, post.title), board, post, contentHtml, comments, {
           errors,

@@ -19,12 +19,16 @@ export interface PostRow {
   updated_at: string;
   is_admin_post: number;
   content_format: string;
+  rendered_content: string;
 }
 
 /**
  * 게시물 도메인 모델. 비회원 작성이므로 기본적으로 password_hash로 소유권을 증명하지만,
  * isAdminPost인 경우 관리자 세션만으로 수정/삭제가 허용된다(PostController 참고).
- * contentFormat에 따라 content를 렌더링하는 방식이 달라진다(PostContentRenderer 참고).
+ *
+ * renderedContent는 작성/수정 시점에 PostContentRenderer로 한 번만 생성해 저장해 둔
+ * 안전한 HTML이다. 조회할 때마다 마크다운/HTML을 다시 파싱하면 Workers CPU 시간
+ * 제한을 넘기기 쉬우므로, 화면에는 항상 이 값을 그대로 사용한다.
  */
 export class Post {
   constructor(
@@ -39,6 +43,7 @@ export class Post {
     public readonly updatedAt: string,
     public readonly isAdminPost: boolean,
     public readonly contentFormat: PostContentFormat,
+    public readonly renderedContent: string,
   ) {}
 
   static fromRow(row: PostRow): Post {
@@ -54,6 +59,7 @@ export class Post {
       row.updated_at,
       row.is_admin_post === 1,
       parsePostContentFormat(row.content_format),
+      row.rendered_content,
     );
   }
 }

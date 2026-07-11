@@ -1,6 +1,7 @@
 import { BaseController } from './BaseController';
 import { RequestContext } from '../http/RequestContext';
 import { Respond } from '../http/Respond';
+import { safe } from '../http/Html';
 import { PostPage } from '../views/pages/PostPage';
 import { PostFormPage, PostFormValues } from '../views/pages/PostFormPage';
 import { PostDeletePage } from '../views/pages/PostDeletePage';
@@ -103,6 +104,8 @@ export class PostController extends BaseController {
     const finalNickname = isAdminUser ? adminNickname(ctx.adminId as number) : nickname;
     // 관리자 글은 게시물 비밀번호를 쓰지 않으므로(관리자 세션으로만 수정/삭제) 추측 불가능한 임의 값을 해싱해 둔다.
     const passwordHash = isAdminUser ? await PasswordHasher.hash(Encoding.randomToken(32)) : await PasswordHasher.hash(password);
+    // 조회할 때마다 마크다운/HTML을 다시 파싱하면 CPU 시간 제한을 넘기기 쉬우므로 작성 시점에 한 번만 렌더링해 저장한다.
+    const renderedContent = (await PostContentRenderer.render(content, contentFormat)).value;
     const post = await this.app.posts.create(
       board.id,
       title,
@@ -111,6 +114,7 @@ export class PostController extends BaseController {
       passwordHash,
       isAdminUser,
       contentFormat,
+      renderedContent,
     );
     return Respond.redirect(`/board/${board.slug}/post/${post.id}?flash=post_created`);
   };
@@ -131,8 +135,9 @@ export class PostController extends BaseController {
       post.updatedAt,
       post.isAdminPost,
       post.contentFormat,
+      post.renderedContent,
     );
-    const contentHtml = await PostContentRenderer.render(displayPost.content, displayPost.contentFormat);
+    const contentHtml = safe(displayPost.renderedContent);
     const comments = await this.app.comments.findByPostId(post.id);
     const isAdminUser = ctx.adminId !== null;
     return Respond.html(
@@ -199,7 +204,8 @@ export class PostController extends BaseController {
       );
     }
 
-    await this.app.posts.update(post.id, title, content, contentFormat);
+    const renderedContent = (await PostContentRenderer.render(content, contentFormat)).value;
+    await this.app.posts.update(post.id, title, content, contentFormat, renderedContent);
     return Respond.redirect(`/board/${board.slug}/post/${post.id}?flash=post_updated`);
   };
 
