@@ -6,7 +6,7 @@ import { PostPage } from '../views/pages/PostPage';
 import { CommentDeletePage } from '../views/pages/CommentDeletePage';
 import { buildLayoutOptions } from '../views/layoutOptions';
 import { Sanitize } from '../security/Sanitize';
-import { PasswordHasher } from '../security/PasswordHasher';
+import { PasswordHasher, CONTENT_PASSWORD_ITERATIONS } from '../security/PasswordHasher';
 import { Encoding } from '../security/Encoding';
 import { adminNickname } from '../security/AdminIdentity';
 import { LIMITS } from '../config/constants';
@@ -64,8 +64,8 @@ export class CommentController extends BaseController {
 
     const finalNickname = isAdminUser ? adminNickname(ctx.adminId as number) : nickname;
     const passwordHash = isAdminUser
-      ? await PasswordHasher.hash(Encoding.randomToken(32))
-      : await PasswordHasher.hash(password);
+      ? await PasswordHasher.hash(Encoding.randomToken(32), CONTENT_PASSWORD_ITERATIONS)
+      : await PasswordHasher.hash(password, CONTENT_PASSWORD_ITERATIONS);
     await this.app.comments.create(post.id, content, finalNickname, passwordHash, isAdminUser);
     return Respond.redirect(`/board/${board.slug}/post/${post.id}#comments`);
   };

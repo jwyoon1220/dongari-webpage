@@ -2,6 +2,10 @@ name = "inside"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "public"
 
+# Workers 유료 플랜에서만 적용됨(무료 플랜은 요청당 10ms로 고정, 이 설정을 무시함).
+[limits]
+cpu_ms = 50
+
 [[d1_databases]]
 binding = "DB"
 database_name = "inside-db"
