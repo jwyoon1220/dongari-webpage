@@ -1,10 +1,17 @@
 import { html, safe, SafeHtml } from '../../http/Html';
 import { Sanitize } from '../../security/Sanitize';
+import { EmoticonExpander } from '../content/EmoticonExpander';
+import { CDN_ORIGIN } from '../../config/constants';
 
 const ALLOWED_URL_SCHEMES = ['https://', 'http://', 'mailto:', '/'];
+const NO_EMOTICONS: ReadonlyMap<string, string> = new Map();
 
 function isSafeUrl(url: string): boolean {
   return ALLOWED_URL_SCHEMES.some((prefix) => url.startsWith(prefix));
+}
+
+function isSafeImageUrl(url: string): boolean {
+  return url.startsWith(`${CDN_ORIGIN}/`);
 }
 
 /**
@@ -13,7 +20,7 @@ function isSafeUrl(url: string): boolean {
  * 외부 의존성이 없어 공급망 위험이 없고, 모든 텍스트는 삽입 전 escapeHtml을 거친다.
  */
 export class MarkdownRenderer {
-  static toHtml(markdown: string): SafeHtml {
+  static toHtml(markdown: string, emoticons: ReadonlyMap<string, string> = NO_EMOTICONS): SafeHtml {
     const lines = markdown.replace(/\r\n/g, '\n').split('\n');
     const blocks: SafeHtml[] = [];
     let i = 0;
@@ -27,13 +34,13 @@ export class MarkdownRenderer {
       }
 
       if (line.startsWith('## ')) {
-        blocks.push(html`<h2 class="mt-2 text-base font-semibold text-zinc-100">${MarkdownRenderer.renderInline(line.slice(3))}</h2>`);
+        blocks.push(html`<h2 class="mt-2 text-base font-semibold text-zinc-100">${MarkdownRenderer.renderInline(line.slice(3), emoticons)}</h2>`);
         i++;
         continue;
       }
 
       if (line.startsWith('# ')) {
-        blocks.push(html`<h1 class="text-2xl font-bold tracking-tight text-zinc-50">${MarkdownRenderer.renderInline(line.slice(2))}</h1>`);
+        blocks.push(html`<h1 class="text-2xl font-bold tracking-tight text-zinc-50">${MarkdownRenderer.renderInline(line.slice(2), emoticons)}</h1>`);
         i++;
         continue;
       }
@@ -41,7 +48,7 @@ export class MarkdownRenderer {
       if (line.startsWith('- ')) {
         const items: SafeHtml[] = [];
         while (i < lines.length && lines[i].startsWith('- ')) {
-          items.push(html`<li>${MarkdownRenderer.renderInline(lines[i].slice(2))}</li>`);
+          items.push(html`<li>${MarkdownRenderer.renderInline(lines[i].slice(2), emoticons)}</li>`);
           i++;
         }
         blocks.push(html`<ul class="list-disc space-y-1 pl-5 text-sm leading-relaxed text-zinc-400">${items}</ul>`);
@@ -54,7 +61,7 @@ export class MarkdownRenderer {
         i++;
       }
       blocks.push(
-        html`<p class="text-sm leading-relaxed text-zinc-400">${MarkdownRenderer.renderInline(paragraphLines.join(' '))}</p>`,
+        html`<p class="text-sm leading-relaxed text-zinc-400">${MarkdownRenderer.renderInline(paragraphLines.join(' '), emoticons)}</p>`,
       );
     }
 
@@ -71,32 +78,44 @@ export class MarkdownRenderer {
       .replace(/\*\*([^*]+)\*\*/g, '$1');
   }
 
-  /** [label](url)과 **bold**만 지원하는 인라인 렌더러. 그 외 텍스트는 전부 이스케이프된다. */
-  private static renderInline(text: string): SafeHtml {
-    const pattern = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  /**
+   * ![alt](url), [label](url), **bold**, %{emoticon}% 을 지원하는 인라인 렌더러.
+   * 그 외 텍스트는 전부 이스케이프된다(EmoticonExpander가 텍스트 런 단위로 처리).
+   */
+  private static renderInline(text: string, emoticons: ReadonlyMap<string, string>): SafeHtml {
+    const pattern = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
     let result = '';
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
     while ((match = pattern.exec(text)) !== null) {
-      result += Sanitize.escapeHtml(text.slice(lastIndex, match.index));
+      result += EmoticonExpander.expand(text.slice(lastIndex, match.index), emoticons);
 
-      if (match[1] !== undefined) {
-        const label = Sanitize.escapeHtml(match[1]);
+      if (match[2] !== undefined) {
+        // 이미지: ![alt](url). 업로드 CDN 오리진이 아니면 대체 텍스트만 남긴다.
         const url = match[2];
+        if (isSafeImageUrl(url)) {
+          const alt = Sanitize.escapeHtml(match[1] ?? '');
+          result += `<img src="${Sanitize.escapeHtml(url)}" alt="${alt}" class="inline-block max-w-full rounded-md" loading="lazy">`;
+        } else if (match[1]) {
+          result += EmoticonExpander.expand(match[1], emoticons);
+        }
+      } else if (match[4] !== undefined) {
+        const label = EmoticonExpander.expand(match[3] ?? '', emoticons);
+        const url = match[4];
         if (isSafeUrl(url)) {
           result += `<a href="${Sanitize.escapeHtml(url)}" class="text-indigo-400 underline underline-offset-2 hover:text-indigo-300" rel="noopener noreferrer" target="_blank">${label}</a>`;
         } else {
           result += label;
         }
       } else {
-        result += `<strong class="text-zinc-200">${Sanitize.escapeHtml(match[3])}</strong>`;
+        result += `<strong class="text-zinc-200">${EmoticonExpander.expand(match[5], emoticons)}</strong>`;
       }
 
       lastIndex = pattern.lastIndex;
     }
 
-    result += Sanitize.escapeHtml(text.slice(lastIndex));
+    result += EmoticonExpander.expand(text.slice(lastIndex), emoticons);
     return safe(result);
   }
 }

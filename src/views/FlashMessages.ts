@@ -15,6 +15,7 @@ export const FLASH_MESSAGES: Record<string, { type: FlashType; message: string }
   logged_in: { type: 'success', message: '로그인되었습니다.' },
   logged_out: { type: 'success', message: '로그아웃되었습니다.' },
   password_changed: { type: 'success', message: '비밀번호가 변경되었습니다.' },
+  emoticon_created: { type: 'success', message: '이모티콘이 등록되었습니다.' },
 };
 
 export function resolveFlash(code: string | null): { type: FlashType; message: string } | null {

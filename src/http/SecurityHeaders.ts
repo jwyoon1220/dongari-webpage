@@ -1,7 +1,10 @@
+import { CDN_ORIGIN } from '../config/constants';
+
 /**
  * 모든 동적 응답에 적용되는 보안 헤더.
- * - CSP는 인라인 스크립트/스타일을 전혀 허용하지 않고(스크립트는 /js/app.js 하나만),
+ * - CSP는 인라인 스크립트/스타일을 전혀 허용하지 않고(스크립트는 /js/*.js 파일만),
  *   Trusted Types까지 요구해 DOM 기반 XSS의 실질적 피해 범위를 원천적으로 제한한다.
+ * - img-src는 자체 오리진/data: 외에 업로드 이미지가 서빙되는 CDN(cdn.parin.asia)만 추가로 허용한다.
  * - HSTS, 클릭재킹/스니핑/크로스오리진 격리 헤더를 함께 적용한다.
  * - 동적 페이지는 CSRF 토큰·세션 상태를 담고 있으므로 어떤 캐시에도 저장되지 않도록 한다.
  */
@@ -9,7 +12,7 @@ const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data:",
+  `img-src 'self' data: ${CDN_ORIGIN}`,
   "font-src 'self'",
   "connect-src 'self'",
   "object-src 'none'",

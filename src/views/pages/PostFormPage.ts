@@ -3,6 +3,7 @@ import { Layout, LayoutOptions } from '../Layout';
 import { Board } from '../../models/Board';
 import { PostContentFormat } from '../../models/Post';
 import { FormErrors } from '../components/FormErrors';
+import { EmoticonDataIsland, EmoticonListItem } from '../components/EmoticonDataIsland';
 import { CSRF_FIELD_NAME } from '../../security/CsrfProtection';
 import { LIMITS } from '../../config/constants';
 import { INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS, GHOST_BUTTON_CLASS } from '../styles';
@@ -25,11 +26,13 @@ export interface PostFormPageOptions {
   isAdminUser: boolean;
   /** mode === 'create' && isAdminUser 일 때 표시할 고정 닉네임 미리보기(admin_XXXXX) */
   adminNicknamePreview?: string;
+  /** 붙여넣기 업로드/%{ 자동완성(content-tools.js)에 쓰이는 이모티콘 목록 */
+  emoticons: EmoticonListItem[];
 }
 
 export class PostFormPage {
   static render(layoutOptions: LayoutOptions, options: PostFormPageOptions): SafeHtml {
-    const { mode, board, action, values, errors, csrfToken, isAdminUser, adminNicknamePreview } = options;
+    const { mode, board, action, values, errors, csrfToken, isAdminUser, adminNicknamePreview, emoticons } = options;
     const heading = mode === 'create' ? '새 게시물 작성' : '게시물 수정';
 
     const adminNotice = (message: string) =>
@@ -136,9 +139,16 @@ export class PostFormPage {
             maxlength="${String(LIMITS.POST_CONTENT_MAX)}"
             rows="10"
             class="${INPUT_CLASS}"
+            data-content-tools
+            data-emoticon-source="emoticon-data"
           >
 ${values.content}</textarea
           >
+          <p class="mt-1 text-xs text-zinc-500">
+            이미지를 붙여넣으면(Ctrl+V) 자동으로 업로드됩니다. <code>%{이름}%</code>을 입력하면
+            <a href="/emotion" class="text-indigo-400 underline underline-offset-2 hover:text-indigo-300" target="_blank">이모티콘</a> 자동완성이 표시됩니다.
+          </p>
+          ${EmoticonDataIsland.render('emoticon-data', emoticons)}
         </div>
         ${PostFormPage.renderFormatSelector(values.contentFormat)}
         ${passwordFields}

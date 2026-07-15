@@ -2,6 +2,9 @@ import { html, safe, SafeHtml } from '../../http/Html';
 import { PostContentFormat } from '../../models/Post';
 import { HtmlSanitizer } from '../../security/HtmlSanitizer';
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
+import { EmoticonExpander } from './EmoticonExpander';
+
+const NO_EMOTICONS: ReadonlyMap<string, string> = new Map();
 
 // 마크다운/HTML 형식으로 렌더링된 태그(a, ul, blockquote, pre, code 등)에
 // 다크 테마와 어울리는 기본 스타일을 입혀주는 래퍼 클래스.
@@ -20,16 +23,22 @@ const PROSE_CLASS = [
 
 /** 게시물 content_format에 맞춰 안전하게 렌더링한다. HTML/마크다운은 모두 정제를 거친다. */
 export class PostContentRenderer {
-  static async render(content: string, format: PostContentFormat): Promise<SafeHtml> {
+  static async render(
+    content: string,
+    format: PostContentFormat,
+    emoticons: ReadonlyMap<string, string> = NO_EMOTICONS,
+  ): Promise<SafeHtml> {
     if (format === 'html') {
-      const sanitized = await HtmlSanitizer.sanitize(content);
+      const sanitized = await HtmlSanitizer.sanitize(content, emoticons);
       return html`<div class="${PROSE_CLASS}">${safe(sanitized)}</div>`;
     }
 
     if (format === 'markdown') {
-      return html`<div class="${PROSE_CLASS}">${MarkdownRenderer.toHtml(content)}</div>`;
+      return html`<div class="${PROSE_CLASS}">${MarkdownRenderer.toHtml(content, emoticons)}</div>`;
     }
 
-    return html`<p class="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-200">${content}</p>`;
+    return html`<p class="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-200">${safe(
+      EmoticonExpander.expand(content, emoticons),
+    )}</p>`;
   }
 }
