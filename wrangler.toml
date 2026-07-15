@@ -3,10 +3,15 @@ compatibility_date = "2024-09-23"
 pages_build_output_dir = "public"
 
 # Workers 유료 플랜에서만 적용됨(무료 플랜은 요청당 10ms로 고정, 이 설정을 무시함).
+# 이미지 업로드 시 WASM WebP 인코딩이 CPU를 상당히 사용하므로 유료 플랜 최대치로 설정한다.
 [limits]
-cpu_ms = 50
+cpu_ms = 30000
 
 [[d1_databases]]
 binding = "DB"
 database_name = "inside-db"
 database_id = "7edf3b1a-8d37-4119-ad62-d6c55b189df8"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "inside-storge"

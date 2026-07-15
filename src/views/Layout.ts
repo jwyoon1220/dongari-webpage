@@ -54,9 +54,13 @@ ${robotsMeta}
   </main>
   <footer class="border-t border-zinc-800/80 py-8 text-center text-xs text-zinc-600">
     <p>${SITE_NAME} — 텍스트 기반 커뮤니티</p>
-    <p class="mt-1"><a href="/terms" class="transition hover:text-zinc-400">이용약관</a></p>
+    <p class="mt-1">
+      <a href="/terms" class="transition hover:text-zinc-400">이용약관</a>
+      · <a href="/emotion" class="transition hover:text-zinc-400">이모티콘</a>
+    </p>
   </footer>
   <script src="/js/app.js" defer></script>
+  <script src="/js/content-tools.js" defer></script>
 </body>
 </html>`;
   }

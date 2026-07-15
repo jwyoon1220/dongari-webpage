@@ -10,7 +10,7 @@ import { PasswordHasher, CONTENT_PASSWORD_ITERATIONS } from '../security/Passwor
 import { Encoding } from '../security/Encoding';
 import { adminNickname } from '../security/AdminIdentity';
 import { LIMITS } from '../config/constants';
-import { loadBoardBySlug, loadPostInBoard, loadCommentInPost } from './loaders';
+import { loadBoardBySlug, loadPostInBoard, loadCommentInPost, loadEmoticonItems } from './loaders';
 
 /**
  * 댓글 생성/삭제. 요구사항에 따라 수정 기능은 없다.
@@ -53,12 +53,20 @@ export class CommentController extends BaseController {
       const comments = await this.app.comments.findByPostId(post.id);
       const contentHtml = safe(post.renderedContent);
       return Respond.badRequest(
-        PostPage.render(buildLayoutOptions(ctx, post.title), board, post, contentHtml, comments, {
-          errors,
-          values: { nickname, content },
-          isAdminUser,
-          adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
-        }),
+        PostPage.render(
+          buildLayoutOptions(ctx, post.title),
+          board,
+          post,
+          contentHtml,
+          comments,
+          {
+            errors,
+            values: { nickname, content },
+            isAdminUser,
+            adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
+          },
+          await loadEmoticonItems(this.app),
+        ),
       );
     }
 

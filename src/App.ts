@@ -12,6 +12,8 @@ import { PublicController } from './controllers/PublicController';
 import { PostController } from './controllers/PostController';
 import { CommentController } from './controllers/CommentController';
 import { AdminController } from './controllers/AdminController';
+import { ImageController } from './controllers/ImageController';
+import { EmoticonController } from './controllers/EmoticonController';
 
 function buildRouter(app: AppContainer): Router {
   const router = new Router();
@@ -19,6 +21,8 @@ function buildRouter(app: AppContainer): Router {
   const postController = new PostController(app);
   const commentController = new CommentController(app);
   const adminController = new AdminController(app);
+  const imageController = new ImageController(app);
+  const emoticonController = new EmoticonController(app);
 
   router.get('/', publicController.home);
   router.get('/terms', publicController.terms);
@@ -35,6 +39,10 @@ function buildRouter(app: AppContainer): Router {
   router.post('/board/:slug/post/:id/comments', commentController.create);
   router.get('/board/:slug/post/:id/comments/:commentId/delete', commentController.deleteForm);
   router.post('/board/:slug/post/:id/comments/:commentId/delete', commentController.destroy);
+
+  router.post('/api/images', imageController.upload);
+  router.get('/emotion', emoticonController.index);
+  router.post('/emotion', emoticonController.create);
 
   router.get('/admin', adminController.loginForm);
   router.post('/admin/login', adminController.login);

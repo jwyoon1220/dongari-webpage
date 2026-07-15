@@ -12,7 +12,7 @@ import { PasswordHasher, CONTENT_PASSWORD_ITERATIONS } from '../security/Passwor
 import { Encoding } from '../security/Encoding';
 import { adminNickname } from '../security/AdminIdentity';
 import { LIMITS } from '../config/constants';
-import { loadBoardBySlug, loadPostInBoard } from './loaders';
+import { loadBoardBySlug, loadPostInBoard, loadEmoticonItems } from './loaders';
 import { Post, parsePostContentFormat } from '../models/Post';
 
 /**
@@ -38,6 +38,7 @@ export class PostController extends BaseController {
         csrfToken: ctx.csrfToken,
         isAdminUser,
         adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
+        emoticons: await loadEmoticonItems(this.app),
       }),
     );
   };
@@ -97,6 +98,7 @@ export class PostController extends BaseController {
           csrfToken: ctx.csrfToken,
           isAdminUser,
           adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
+          emoticons: await loadEmoticonItems(this.app),
         }),
       );
     }
@@ -107,7 +109,8 @@ export class PostController extends BaseController {
       ? await PasswordHasher.hash(Encoding.randomToken(32), CONTENT_PASSWORD_ITERATIONS)
       : await PasswordHasher.hash(password, CONTENT_PASSWORD_ITERATIONS);
     // 조회할 때마다 마크다운/HTML을 다시 파싱하면 CPU 시간 제한을 넘기기 쉬우므로 작성 시점에 한 번만 렌더링해 저장한다.
-    const renderedContent = (await PostContentRenderer.render(content, contentFormat)).value;
+    const emoticons = await this.app.emoticons.lookupMap();
+    const renderedContent = (await PostContentRenderer.render(content, contentFormat, emoticons)).value;
     const post = await this.app.posts.create(
       board.id,
       title,
@@ -143,12 +146,20 @@ export class PostController extends BaseController {
     const comments = await this.app.comments.findByPostId(post.id);
     const isAdminUser = ctx.adminId !== null;
     return Respond.html(
-      PostPage.render(buildLayoutOptions(ctx, post.title), board, displayPost, contentHtml, comments, {
-        errors: [],
-        values: { nickname: '', content: '' },
-        isAdminUser,
-        adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
-      }),
+      PostPage.render(
+        buildLayoutOptions(ctx, post.title),
+        board,
+        displayPost,
+        contentHtml,
+        comments,
+        {
+          errors: [],
+          values: { nickname: '', content: '' },
+          isAdminUser,
+          adminNicknamePreview: isAdminUser ? adminNickname(ctx.adminId as number) : undefined,
+        },
+        await loadEmoticonItems(this.app),
+      ),
     );
   };
 
@@ -164,6 +175,7 @@ export class PostController extends BaseController {
         errors: [],
         csrfToken: ctx.csrfToken,
         isAdminUser: ctx.adminId !== null,
+        emoticons: await loadEmoticonItems(this.app),
       }),
     );
   };
@@ -202,11 +214,13 @@ export class PostController extends BaseController {
           errors,
           csrfToken: ctx.csrfToken,
           isAdminUser: ctx.adminId !== null,
+          emoticons: await loadEmoticonItems(this.app),
         }),
       );
     }
 
-    const renderedContent = (await PostContentRenderer.render(content, contentFormat)).value;
+    const emoticons = await this.app.emoticons.lookupMap();
+    const renderedContent = (await PostContentRenderer.render(content, contentFormat, emoticons)).value;
     await this.app.posts.update(post.id, title, content, contentFormat, renderedContent);
     return Respond.redirect(`/board/${board.slug}/post/${post.id}?flash=post_updated`);
   };

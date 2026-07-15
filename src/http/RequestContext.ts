@@ -55,6 +55,20 @@ export class RequestContext {
     return form.get(name) ?? '';
   }
 
+  /** 바이너리(이미지 업로드 등) 바디를 크기 제한과 함께 안전하게 읽는다. */
+  async binaryBody(maxBytes: number): Promise<ArrayBuffer> {
+    const contentLength = Number(this.request.headers.get('Content-Length') ?? '0');
+    if (contentLength > maxBytes) {
+      throw new HttpError(413, '업로드 용량이 너무 큽니다.');
+    }
+
+    const buffer = await this.request.arrayBuffer();
+    if (buffer.byteLength > maxBytes) {
+      throw new HttpError(413, '업로드 용량이 너무 큽니다.');
+    }
+    return buffer;
+  }
+
   clientIp(): string {
     return ClientIp.from(this.request);
   }

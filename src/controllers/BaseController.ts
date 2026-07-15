@@ -5,13 +5,18 @@ import { Respond } from '../http/Respond';
 import { HttpError } from '../http/HttpError';
 import { CsrfProtection, CSRF_FIELD_NAME } from '../security/CsrfProtection';
 import { PasswordHasher } from '../security/PasswordHasher';
+import { RateLimiter } from '../security/RateLimiter';
 
 /** 컨트롤러 공통 기능(CSRF 검증, 관리자 인증 가드, 게시물/댓글 소유자 비밀번호 검증)을 제공하는 베이스 클래스. */
 export abstract class BaseController {
   constructor(protected readonly app: AppContainer) {}
 
   protected verifyCsrfOrThrow(ctx: RequestContext, form: URLSearchParams): void {
-    const submitted = form.get(CSRF_FIELD_NAME);
+    this.verifyCsrfTokenOrThrow(ctx, form.get(CSRF_FIELD_NAME));
+  }
+
+  /** 폼 필드가 아니라 커스텀 헤더(fetch 기반 업로드 등)로 전달된 CSRF 토큰을 검증한다. */
+  protected verifyCsrfTokenOrThrow(ctx: RequestContext, submitted: string | null): void {
     if (!CsrfProtection.verify(ctx.request, ctx.cookies, submitted)) {
       throw new HttpError(403, '요청을 검증할 수 없습니다. 새로고침 후 다시 시도해주세요.');
     }
@@ -50,13 +55,23 @@ export abstract class BaseController {
    * 통과 시 이번 시도를 즉시 기록하고 null을, 초과 시 오류 메시지를 반환한다.
    */
   protected async checkCreationRateLimit(ctx: RequestContext, kind: string): Promise<string | null> {
+    return this.checkRateLimit(ctx, this.app.creationRateLimiter, kind, '너무 빠르게 작성하고 있습니다. 잠시 후 다시 시도해주세요.');
+  }
+
+  /** kind별로 다른 RateLimiter 인스턴스를 재사용할 수 있는 범용 버전. 관리자 세션은 제한하지 않는다. */
+  protected async checkRateLimit(
+    ctx: RequestContext,
+    limiter: RateLimiter,
+    kind: string,
+    message = '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+  ): Promise<string | null> {
     if (ctx.adminId !== null) return null;
 
     const identifier = `${kind}:${ctx.clientIp()}`;
-    if (await this.app.creationRateLimiter.isBlocked(identifier)) {
-      return '너무 빠르게 작성하고 있습니다. 잠시 후 다시 시도해주세요.';
+    if (await limiter.isBlocked(identifier)) {
+      return message;
     }
-    await this.app.creationRateLimiter.recordEvent(identifier);
+    await limiter.recordEvent(identifier);
     return null;
   }
 }

@@ -5,6 +5,7 @@ import { Post } from '../../models/Post';
 import { Comment } from '../../models/Comment';
 import { AdminBadge } from '../components/AdminBadge';
 import { CommentsSection, CommentFormState } from '../components/CommentsSection';
+import { EmoticonListItem } from '../components/EmoticonDataIsland';
 import { formatDate } from '../format';
 
 export class PostPage {
@@ -15,6 +16,7 @@ export class PostPage {
     contentHtml: SafeHtml,
     comments: Comment[],
     commentForm: CommentFormState,
+    emoticons: EmoticonListItem[],
   ): SafeHtml {
     const body = html`<article class="space-y-6">
       <div>
@@ -47,7 +49,7 @@ export class PostPage {
           >
         </div>
       </div>
-      ${CommentsSection.render(board, post, comments, layoutOptions.csrfToken, commentForm)}
+      ${CommentsSection.render(board, post, comments, layoutOptions.csrfToken, commentForm, emoticons)}
     </article>`;
 
     return Layout.render(layoutOptions, body);
