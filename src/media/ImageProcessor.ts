@@ -84,6 +84,62 @@ function detectFormat(bytes: Uint8Array): DetectedFormat {
   return 'unknown';
 }
 
+/**
+ * PNG/JPEG 헤더만 읽어서 실제 디코딩 전에 가로/세로 픽셀 크기를 확인한다("압축 폭탄" 방어).
+ * 고압축률 이미지는 파일 크기가 몇 KB여도 디코드하면 수백 MB~수 GB의 픽셀 버퍼가 될 수 있어
+ * (예: 단색 20000x20000 PNG), 파일 크기 제한만으로는 막을 수 없다. Workers 인스턴스 메모리가
+ * 128MB로 제한적이므로, 실제로 CPU/메모리를 쓰는 디코드 호출 전에 반드시 거쳐야 한다.
+ */
+function readDimensions(format: 'png' | 'jpeg', bytes: Uint8Array): { width: number; height: number } | null {
+  if (format === 'png') {
+    // 시그니처(8바이트) 직후 첫 청크는 PNG 스펙상 항상 IHDR이며,
+    // 그 안에 width(4바이트 BE), height(4바이트 BE)가 고정 위치에 있다.
+    if (bytes.length < 24) return null;
+    const width = ((bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]) >>> 0;
+    const height = ((bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]) >>> 0;
+    return { width, height };
+  }
+
+  // JPEG: 0xFFD8(SOI) 뒤로 마커들을 순회하다 SOFn(0xFFC0~0xFFCF, DHT/JPG/DAC 제외) 마커를 찾는다.
+  // 그 안에 precision(1) + height(2, BE) + width(2, BE)가 고정 위치에 있다.
+  let offset = 2;
+  while (offset + 4 <= bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset++;
+      continue;
+    }
+    const marker = bytes[offset + 1];
+    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset += 2;
+      continue;
+    }
+    const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+    const isSofMarker = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+    if (isSofMarker) {
+      if (offset + 9 > bytes.length) return null;
+      const height = (bytes[offset + 5] << 8) | bytes[offset + 6];
+      const width = (bytes[offset + 7] << 8) | bytes[offset + 8];
+      return { width, height };
+    }
+    if (length < 2) return null; // 손상된 세그먼트, 무한 루프 방지
+    offset += 2 + length;
+  }
+  return null;
+}
+
+function assertSafeDimensions(format: 'png' | 'jpeg', bytes: Uint8Array): void {
+  const dims = readDimensions(format, bytes);
+  if (!dims || dims.width < 1 || dims.height < 1) {
+    throw new HttpError(400, '이미지 크기 정보를 읽을 수 없습니다.');
+  }
+  if (dims.width > MAX_IMAGE_DIMENSION || dims.height > MAX_IMAGE_DIMENSION) {
+    throw new HttpError(
+      413,
+      `이미지 크기는 가로/세로 각각 최대 ${MAX_IMAGE_DIMENSION}px까지 지원합니다. 크기를 줄여 다시 업로드해주세요.`,
+    );
+  }
+}
+
 async function decodePngImage(buffer: ArrayBuffer): Promise<ImageData> {
   await ensurePngReady();
   return decodePng(buffer);
@@ -120,23 +176,23 @@ export class ImageProcessor {
       return { bytes: input, contentType: 'image/webp' };
     }
 
-    let imageData: ImageData;
-    if (format === 'png') {
-      imageData = await decodePngImage(input);
-    } else if (format === 'jpeg') {
-      imageData = await decodeJpegImage(input);
-    } else {
+    if (format !== 'png' && format !== 'jpeg') {
       throw new HttpError(415, '지원하지 않는 이미지 형식입니다. PNG, JPEG, WebP 파일만 업로드할 수 있습니다.');
     }
 
-    if (imageData.width < 1 || imageData.height < 1) {
+    // 실제 디코딩(CPU/메모리를 많이 쓰는 단계) 전에 헤더만으로 크기를 검증한다 - 압축 폭탄 방어.
+    assertSafeDimensions(format, bytes);
+
+    const imageData = format === 'png' ? await decodePngImage(input) : await decodeJpegImage(input);
+
+    // 헤더에 적힌 크기와 실제 디코드된 픽셀 버퍼 크기가 다르면(손상/조작된 파일) 안전하게 거부한다.
+    if (
+      imageData.width < 1 ||
+      imageData.height < 1 ||
+      imageData.width > MAX_IMAGE_DIMENSION ||
+      imageData.height > MAX_IMAGE_DIMENSION
+    ) {
       throw new HttpError(400, '이미지를 읽을 수 없습니다.');
-    }
-    if (imageData.width > MAX_IMAGE_DIMENSION || imageData.height > MAX_IMAGE_DIMENSION) {
-      throw new HttpError(
-        413,
-        `이미지 크기는 가로/세로 각각 최대 ${MAX_IMAGE_DIMENSION}px까지 지원합니다. 크기를 줄여 다시 업로드해주세요.`,
-      );
     }
 
     const encoded = await encodeWebpImage(imageData);
